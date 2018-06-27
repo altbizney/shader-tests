@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/93/three.js"></script>
+  <script src="https://rawgit.com/spite/THREE.MeshLine/master/src/THREE.MeshLine.js"></script>
+  <script src="https://rawgit.com/spite/THREE.MeshLine/master/demo/js/OrbitControls.js"></script>
+  <script src="./drawing-rabbit.js"></script>
+  <style media="screen">
+    body {
+      background: #ccc;
+    }
+
+    canvas, img {
+      margin: 20px;
+      outline: 1px solid #eee;
+      zoom: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container"></div>
+  <img src="./drawing-rabbit.png">
+
+  <script type="text/javascript">
+    var paths = [];
+    for (var i=0; i < DRAWING.paths.length; i++) {
+      var points = DRAWING.paths[i].points.split('|').map((p) => p.split(','));
+      paths[i] = new Float32Array(points.length * 3);
+
+      var k = 0;
+      for (var j=0; j < points.length * 3; j += 3) {
+        paths[i][j] = points[k][0];
+        paths[i][j + 1] = -points[k][1];
+        paths[i][j + 2] = i;
+        k++;
+      }
+    }
+
+    var w = 1920 + (200 * 2);
+    var h = 1080 + (200 * 2);
+
+    var resolution = new THREE.Vector2(w, h);
+
+		var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+		renderer.setSize(w, h);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.querySelector('.container').appendChild(renderer.domElement);
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(65, w / h, 1, 10000);
+		camera.position.set(500, 0, 0);
+
+    var controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    var meshes = [];
+
+    function clearPaths() {
+	     meshes.forEach((p) => scene.remove(p));
+    	 meshes = [];
+    }
+
+    var drawingId = 0;
+
+    function makePath(index) {
+      var meshLine = new MeshLine();
+      meshLine.setGeometry(paths[index]);
+
+      // drawingId++;
+      // if (drawingId >= paths.length) drawingId = 0;
+
+      var material = new MeshLineMaterial({
+        color: new THREE.Color( 0x5ca4a9 ),
+        sizeAttenuation: false,
+        resolution: resolution,
+        lineWidth: 10.0,
+        near: camera.near,
+        far: camera.far,
+        depthWrite: false,
+        depthTest: false,
+        transparent: true,
+      });
+
+      mesh = new THREE.Mesh(meshLine.geometry, material);
+
+      mesh.lookAt(camera.position);
+
+      	mesh.position.x -= w;
+      	// mesh.position.y -= h;
+      	// mesh.rotation.y = -Math.PI / 2;
+      	// mesh.rotation.z = Math.PI;
+
+      scene.add(mesh);
+      meshes.push(mesh);
+    }
+
+    function renderDrawing(){
+      for (var i=0; i < paths.length; i++) {
+        makePath(i);
+      }
+    }
+
+
+    function render() {
+  		requestAnimationFrame(render);
+
+      clearPaths();
+      renderDrawing();
+
+  		renderer.render(scene, camera);
+  	}
+
+    render();
+
+  </script>
+</body>
+</html>
