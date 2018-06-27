@@ -42,7 +42,7 @@
     // on variable loop indexes. We'll use this to break out of loops
     // over input points. This means pointTextures wont be able to exceed
     // whatever this value is. Treat this as temporary.
-    const int MAX_STEPS = 1000;
+    const int MAX_STEPS = 10000;
 
     float sdSegmentSq( in vec2 p, in vec2 a, in vec2 b ) {
       vec2 pa = p-a, ba = b-a;
@@ -91,7 +91,6 @@
           // line
           float lineThickness = 5.0;
           col = mix( col, vec3(0.0), 1.0-smoothstep(lineThickness, (lineThickness+1.0), d.x) );
-
       }
 
       gl_FragColor = vec4(col,1.0);
@@ -142,6 +141,13 @@
 
     // hydrate into array
     points = points.map((i) => i.split('|').map((j) => j.split(',')));
+
+    // flatten
+    var acc = [];
+    points.forEach((j) => j.forEach((i) => acc.push(i)));
+
+    // trim total number of points
+    points = [acc.slice(0, 1000)];
 
     var drawingId = 0;
 
