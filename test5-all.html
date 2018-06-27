@@ -81,16 +81,16 @@
             vec2 b = texture2D(pointsTexture, nextPoint).xy;
             d = min( d, vec2(sdSegmentSq( position,a,b ), sdPointSq(position,a) ) );
           }
-          d.x = sqrt( d.x );
-          d.y = sqrt( min( d.y, sdPointSq(position, texture2D(pointsTexture, vec2((pointLength - 1.0) / pointLength, 1.0)).xy ) ) );
+          // d.x = sqrt( d.x );
+          // d.y = sqrt( min( d.y, sdPointSq(position, texture2D(pointsTexture, vec2((pointLength - 1.0) / pointLength, 1.0)).xy ) ) );
 
           // dot
-          // float dotThickness = 1.0;
-          // col = mix( col, vec3(0.9,0.2,0.0), 1.0-smoothstep(dotThickness, (dotThickness+1.0),d.x) );
+          float dotThickness = 1.0;
+          col = mix( col, vec3(0.9,0.2,0.0), 1.0-smoothstep(dotThickness, (dotThickness+1.0),d.x) );
 
-          // line
-          float lineThickness = 5.0;
-          col = mix( col, vec3(0.0), 1.0-smoothstep(lineThickness, (lineThickness+1.0), d.x) );
+          // // line
+          // float lineThickness = 5.0;
+          // col = mix( col, vec3(0.0), 1.0-smoothstep(lineThickness, (lineThickness+1.0), d.x) );
       }
 
       gl_FragColor = vec4(col,1.0);
@@ -141,6 +141,13 @@
 
     // hydrate into array
     points = points.map((i) => i.split('|').map((j) => j.split(',')));
+
+    // flatten
+    var acc = [];
+    points.forEach((j) => j.forEach((i) => acc.push(i)));
+
+    // trim total number of points
+    points = [acc.slice(0, 1000)];
 
     var drawingId = 0;
 
