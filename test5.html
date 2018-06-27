@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/93/three.js"></script>
+</head>
+<body>
+  <div class="container"></div>
+
+  <script id="vertexShader" type="x-shader/x-vertex">
+    void main() {
+      gl_Position = vec4(position, 1.0);
+    }
+  </script>
+
+  <script id="fragmentShader" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform sampler2D pointsTexture;
+    uniform float pointLength;
+    uniform vec2 resolution;
+
+    // Mostly ripped from https://www.shadertoy.com/view/4lGSDw,
+    // which has a lot more going including actually drawing the path,
+    // so check that out. I just wanted to quickly get this drawing.
+
+
+    // Note: This is kind of a shitty hack to get around restrictions
+    // on variable loop indexes. We'll use this to break out of loops
+    // over input points. This means pointTextures wont be able to exceed
+    // whatever this value is. Treat this as temporary.
+    const int MAX_STEPS = 1000;
+
+    float sdSegmentSq( in vec2 p, in vec2 a, in vec2 b ) {
+      vec2 pa = p-a, ba = b-a;
+      float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+      vec2  d = pa - ba*h;
+      return dot(d,d);
+    }
+
+    float sdPointSq( in vec2 p, in vec2 a ) {
+      vec2 d = p - a;
+      return dot(d,d);
+    }
+
+    void main() {
+
+      float e = 1.0 / resolution.x;
+      vec2 p = gl_FragCoord.xy / resolution.x;
+
+      vec3 col = vec3(1.0);
+
+      // Draw points and rigid path
+      //------------------------------------------------------
+      {
+          // Note: This smells. Looks like it was used as an excessive max
+          // for the following min functions. Ripped from source.
+          vec2 d = vec2(1000.0);
+
+          float dataTexelWidth = 1.0 / pointLength;
+
+          for( int i = 0; i < MAX_STEPS; i++ ) {
+            if (float(i) >= pointLength - 1.0) { break; }
+
+            vec2 a = texture2D(pointsTexture, vec2((float(i) / pointLength), 1.0)).xy;
+            vec2 b = texture2D(pointsTexture, vec2((float(i) / pointLength) + dataTexelWidth, 1.0)).xy;
+            d = min( d, vec2(sdSegmentSq( p,a,b ), sdPointSq(p,a) ) );
+          }
+          d.x = sqrt( d.x );
+          d.y = sqrt( min( d.y, sdPointSq(p, texture2D(pointsTexture, vec2((pointLength - 1.0) / pointLength, 1.0)).xy ) ) );
+
+          col = mix( col, vec3(0.8,0.8,0.8), 1.0-smoothstep(0.0,e,d.x) );
+          col = mix( col, vec3(0.9,0.2,0.0), 1.0-smoothstep(5.0*e,6.0*e,d.y) );
+      }
+
+      gl_FragColor = vec4(col,1.0);
+    }
+  </script>
+
+  <script type="text/javascript">
+    // https://codepen.io/SereznoKot/pen/vNjJWd
+    // https://jsfiddle.net/andystanton/fvz46esu/
+
+    var w = 750;
+    var h = 750;
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.OrthographicCamera(w / - 2, w / 2, h / 2, h / - 2, 1, 1000);
+    camera.position.set(0, 0, 100);
+
+    var renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(w, h);
+    document.querySelector('.container').appendChild(renderer.domElement);
+
+    /*Data texture*/
+    var rawPointData = [
+      [0.098, 0.062],
+      [0.352, 0.073],
+      [0.422, 0.136],
+      [0.371, 0.085],
+      [0.449, 0.140],
+      [0.352, 0.187],
+      [0.379, 0.202],
+      [0.398, 0.202],
+      [0.266, 0.198],
+      [0.318, 0.345],
+      [0.402, 0.359],
+      [0.361, 0.425],
+      [0.371, 0.521],
+      [0.410, 0.491],
+      [0.410, 0.357],
+      [0.502, 0.482],
+      [0.529, 0.435],
+      [0.426, 0.343],
+      [0.449, 0.343],
+      [0.504, 0.335],
+      [0.664, 0.355],
+      [0.748, 0.208],
+      [0.738, 0.277],
+      [0.787, 0.308],
+      [0.748, 0.183],
+      [0.623, 0.081],
+      [0.557, 0.099],
+      [0.648, 0.116],
+      [0.598, 0.116],
+      [0.566, 0.195],
+      [0.584, 0.228],
+      [0.508, 0.083],
+      [0.457, 0.140],
+      [0.508, 0.130],
+      [0.625, 0.071],
+      [0.818, 0.093],
+      [0.951, 0.066],
+      [0.547, 0.081]
+    ];
+
+    var j = 0;
+    var data = new Float32Array(rawPointData.length * 4);
+
+    for (var i = 0; i < rawPointData.length; i++) {
+      var point = rawPointData[i];
+
+      data[4*i]   = point[0]; // x
+      data[4*i+1] = point[1]; // y
+      data[4*i+2] = 0.0;
+      data[4*i+3] = 0.0;
+    }
+
+    var dataTex = new THREE.DataTexture(data, rawPointData.length, 1, THREE.RGBAFormat, THREE.FloatType);
+
+    dataTex.needsUpdate = true;
+
+    var planeGeo = new THREE.PlaneBufferGeometry(w, h);
+
+    var material = new THREE.ShaderMaterial({
+      uniforms: {
+        resolution: { type: "v2", value: new THREE.Vector2(w, h) },
+        pointsTexture: { type: "t", value: dataTex },
+        pointLength: { type: "1f", value: rawPointData.length }
+      },
+      vertexShader: document.getElementById( 'vertexShader' ).textContent,
+      fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+    });
+
+    material.uniforms.resolution.value.x = w;
+    material.uniforms.resolution.value.y = h;
+
+    var plane = new THREE.Mesh(planeGeo, material);
+    scene.add(plane);
+
+    /*Render*/
+    renderer.render(scene, camera);
+  </script>
+</body>
+</html>
