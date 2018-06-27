@@ -6,8 +6,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/93/three.js"></script>
   <script src="./drawing-rabbit.js"></script>
   <style media="screen">
+    body {
+      background: #ccc;
+    }
+
     canvas {
       outline: 1px solid #eee;
+      /* zoom: 0.5; */
     }
   </style>
 </head>
@@ -25,11 +30,12 @@
 
     uniform sampler2D pointsTexture;
     uniform float pointLength;
-    uniform vec2 resolution;
+    // uniform vec2 resolution;
 
     // Mostly ripped from https://www.shadertoy.com/view/4lGSDw,
     // which has a lot more going including actually drawing the path,
     // so check that out. I just wanted to quickly get this drawing.
+    // catmull version: https://www.shadertoy.com/view/MlGSz3
 
 
     // Note: This is kind of a shitty hack to get around restrictions
@@ -52,8 +58,7 @@
 
     void main() {
 
-      float e = 1.0 / resolution.x;
-      vec2 p = gl_FragCoord.xy / resolution.x;
+      vec2 position = gl_FragCoord.xy;
 
       vec3 col = vec3(1.0);
 
@@ -69,20 +74,23 @@
           for( int i = 0; i < MAX_STEPS; i++ ) {
             if (float(i) >= pointLength - 1.0) { break; }
 
-            vec2 a = texture2D(pointsTexture, vec2((float(i) / pointLength), 1.0)).xy;
-            vec2 b = texture2D(pointsTexture, vec2((float(i) / pointLength) + dataTexelWidth, 1.0)).xy;
-            d = min( d, vec2(sdSegmentSq( p,a,b ), sdPointSq(p,a) ) );
+            vec2 thisPoint = vec2((float(i) / pointLength), 1.0);
+            vec2 nextPoint = vec2((float(i) / pointLength) + dataTexelWidth, 1.0);
+
+            vec2 a = texture2D(pointsTexture, thisPoint).xy;
+            vec2 b = texture2D(pointsTexture, nextPoint).xy;
+            d = min( d, vec2(sdSegmentSq( position,a,b ), sdPointSq(position,a) ) );
           }
           d.x = sqrt( d.x );
-          d.y = sqrt( min( d.y, sdPointSq(p, texture2D(pointsTexture, vec2((pointLength - 1.0) / pointLength, 1.0)).xy ) ) );
+          d.y = sqrt( min( d.y, sdPointSq(position, texture2D(pointsTexture, vec2((pointLength - 1.0) / pointLength, 1.0)).xy ) ) );
 
           // dot
-          // float dotThickness = 1.0;
-          // col = mix( col, vec3(0.9,0.2,0.0), 1.0-smoothstep(dotThickness*e, (dotThickness+1.0)*e,d.y) );
+          float dotThickness = 1.0;
+          col = mix( col, vec3(0.9,0.2,0.0), 1.0-smoothstep(dotThickness, (dotThickness+1.0),d.y) );
 
           // line
-          float lineThickness = 2.0;
-          col = mix( col, vec3(0.0), 1.0-smoothstep(lineThickness*e, (lineThickness+1.0)*e, d.x) );
+          float lineThickness = 5.0;
+          col = mix( col, vec3(0.0), 1.0-smoothstep(lineThickness, (lineThickness+1.0), d.x) );
 
       }
 
@@ -94,8 +102,8 @@
     // https://codepen.io/SereznoKot/pen/vNjJWd
     // https://jsfiddle.net/andystanton/fvz46esu/
 
-    var w = 750;
-    var h = 750;
+    var w = 1920 + (200 * 2);
+    var h = 1080 + (200 * 2);
 
     var scene = new THREE.Scene();
     var camera = new THREE.OrthographicCamera(w / - 2, w / 2, h / 2, h / - 2, 1, 1000);
@@ -109,7 +117,7 @@
 
     var material = new THREE.ShaderMaterial({
       uniforms: {
-        resolution: { type: "v2", value: new THREE.Vector2(w, h) },
+        // resolution: { type: "v2", value: new THREE.Vector2(w, h) },
         pointsTexture: { type: "t", value: null },
         pointLength: { type: "1f", value: 0 }
       },
@@ -120,8 +128,8 @@
     var plane = new THREE.Mesh(planeGeo, material);
     scene.add(plane);
 
-    material.uniforms.resolution.value.x = w;
-    material.uniforms.resolution.value.y = h;
+    // material.uniforms.resolution.value.x = w;
+    // material.uniforms.resolution.value.y = h;
 
     var points = [
       '202,187',
@@ -133,7 +141,7 @@
     points = DRAWING.paths.map((i) => i.points);
 
     // hydrate into array
-    points = points.map((i) => i.split('|').map((j) => j.split(',').map((k) => k / 1920)));
+    points = points.map((i) => i.split('|').map((j) => j.split(',')));
 
     var drawingId = 0;
 
@@ -143,7 +151,6 @@
       drawingId++;
       if (drawingId >= points.length) drawingId = 0;
 
-    var j = 0;
     var data = new Float32Array(rawPointData.length * 4);
 
     for (var i = 0; i < rawPointData.length; i++) {
