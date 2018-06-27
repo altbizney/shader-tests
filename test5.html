@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title></title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/93/three.js"></script>
+  <script src="./drawing-rabbit.js"></script>
   <style media="screen">
     canvas {
       outline: 1px solid #eee;
@@ -75,8 +76,14 @@
           d.x = sqrt( d.x );
           d.y = sqrt( min( d.y, sdPointSq(p, texture2D(pointsTexture, vec2((pointLength - 1.0) / pointLength, 1.0)).xy ) ) );
 
-          col = mix( col, vec3(0.8,0.8,0.8), 1.0-smoothstep(0.0,e,d.x) );
-          col = mix( col, vec3(0.9,0.2,0.0), 1.0-smoothstep(5.0*e,6.0*e,d.y) );
+          // dot
+          // float dotThickness = 1.0;
+          // col = mix( col, vec3(0.9,0.2,0.0), 1.0-smoothstep(dotThickness*e, (dotThickness+1.0)*e,d.y) );
+
+          // line
+          float lineThickness = 2.0;
+          col = mix( col, vec3(0.0), 1.0-smoothstep(lineThickness*e, (lineThickness+1.0)*e, d.x) );
+
       }
 
       gl_FragColor = vec4(col,1.0);
@@ -116,48 +123,25 @@
     material.uniforms.resolution.value.x = w;
     material.uniforms.resolution.value.y = h;
 
-    function render() {
-    /*Data texture*/
-    var rawPointData = [
-      [0.098, 0.062],
-      [0.352, 0.073],
-      [0.422, 0.136],
-      [0.371, 0.085],
-      [0.449, 0.140],
-      [0.352, 0.187],
-      [0.379, 0.202],
-      [0.398, 0.202],
-      [0.266, 0.198],
-      [0.318, 0.345],
-      [0.402, 0.359],
-      [0.361, 0.425],
-      [0.371, 0.521],
-      [0.410, 0.491],
-      [0.410, 0.357],
-      [0.502, 0.482],
-      [0.529, 0.435],
-      [0.426, 0.343],
-      [0.449, 0.343],
-      [0.504, 0.335],
-      [0.664, 0.355],
-      [0.748, 0.208],
-      [0.738, 0.277],
-      [0.787, 0.308],
-      [0.748, 0.183],
-      [0.623, 0.081],
-      [0.557, 0.099],
-      [0.648, 0.116],
-      [0.598, 0.116],
-      [0.566, 0.195],
-      [0.584, 0.228],
-      [0.508, 0.083],
-      [0.457, 0.140],
-      [0.508, 0.130],
-      [0.625, 0.071],
-      [0.818, 0.093],
-      [0.951, 0.066],
-      [0.547, 0.081]
+    var points = [
+      '202,187',
+      '244,184',
+      '185,215|185,215|185,216|185,216|186,216|186,217|186,217|186,218|186,218|186,219',
     ];
+
+    // get points from drawing
+    points = DRAWING.paths.map((i) => i.points);
+
+    // hydrate into array
+    points = points.map((i) => i.split('|').map((j) => j.split(',').map((k) => k / 1920)));
+
+    var drawingId = 0;
+
+    function render() {
+      var rawPointData = points[drawingId];
+
+      drawingId++;
+      if (drawingId >= points.length) drawingId = 0;
 
     var j = 0;
     var data = new Float32Array(rawPointData.length * 4);
