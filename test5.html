@@ -4,6 +4,11 @@
   <meta charset="utf-8">
   <title></title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/93/three.js"></script>
+  <style media="screen">
+    canvas {
+      outline: 1px solid #eee;
+    }
+  </style>
 </head>
 <body>
   <div class="container"></div>
@@ -93,6 +98,25 @@
     renderer.setSize(w, h);
     document.querySelector('.container').appendChild(renderer.domElement);
 
+    var planeGeo = new THREE.PlaneBufferGeometry(w, h);
+
+    var material = new THREE.ShaderMaterial({
+      uniforms: {
+        resolution: { type: "v2", value: new THREE.Vector2(w, h) },
+        pointsTexture: { type: "t", value: null },
+        pointLength: { type: "1f", value: 0 }
+      },
+      vertexShader: document.getElementById( 'vertexShader' ).textContent,
+      fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+    });
+
+    var plane = new THREE.Mesh(planeGeo, material);
+    scene.add(plane);
+
+    material.uniforms.resolution.value.x = w;
+    material.uniforms.resolution.value.y = h;
+
+    function render() {
     /*Data texture*/
     var rawPointData = [
       [0.098, 0.062],
@@ -151,26 +175,18 @@
 
     dataTex.needsUpdate = true;
 
-    var planeGeo = new THREE.PlaneBufferGeometry(w, h);
+    material.uniforms.pointsTexture.value = dataTex;
 
-    var material = new THREE.ShaderMaterial({
-      uniforms: {
-        resolution: { type: "v2", value: new THREE.Vector2(w, h) },
-        pointsTexture: { type: "t", value: dataTex },
-        pointLength: { type: "1f", value: rawPointData.length }
-      },
-      vertexShader: document.getElementById( 'vertexShader' ).textContent,
-      fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
-    });
+    material.uniforms.pointLength.value = rawPointData.length;
 
-    material.uniforms.resolution.value.x = w;
-    material.uniforms.resolution.value.y = h;
-
-    var plane = new THREE.Mesh(planeGeo, material);
-    scene.add(plane);
 
     /*Render*/
     renderer.render(scene, camera);
+
+    requestAnimationFrame(render);
+    }
+
+    render();
   </script>
 </body>
 </html>
