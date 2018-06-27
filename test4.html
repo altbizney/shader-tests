@@ -17,11 +17,11 @@ void main()	{
 <script id="fragmentShader" type="x-shader/x-fragment">
 precision mediump float;
 
-uniform sampler2D texture;
+uniform sampler2D texture1;
 
 void main() {
   vec2 position = gl_FragCoord.xy;
-  vec4 texel = texture2D(texture, vec2(0.0, 0.0));
+  // position -= vec2(0.5);
 
   vec3 grey = vec3(0.9);
   vec3 red = vec3(1.0, 0.0, 0.0);
@@ -29,7 +29,9 @@ void main() {
   // TODO: set color based on point data
   vec3 color = vec3(0.0);
 
-  if (texel.r > 185.0) {
+  vec4 texel = texture2D(texture1, position);
+
+  if (texel.x == 1.0) {
     color = red;
   } else {
     color = grey;
@@ -65,32 +67,30 @@ var path = "185,215|185,215|185,216|185,216|186,216|186,217|186,217|186,218|186,
 
 path = path.split('|').map((x) => x.split(','));
 
-var j = 0;
-
 for (var i=0; i < path.length; i++) {
-  data[j++] = Math.min(255, path[i][0]);
-  data[j++] = Math.min(255, path[i][1]);
+  data[path[i][0]] = 1;
+  data[path[i][1]] = 1;
+  data[path[i][1]+1] = 1;
+  data[path[i][1]+2] = 1;
 
-  // TODO: skip these?
-  data[j++] = 0;
-  data[j++] = 0;
 }
 
 var dataTex = new THREE.DataTexture(data, side, side, THREE.RGBAFormat, THREE.UnsignedByteType);
 console.log(dataTex);
 
-// use the value of the closest texel
-dataTex.magFilter = THREE.NearestFilter;
+dataTex.magFilter = THREE.LinearFilter;
+dataTex.minFilter = THREE.LinearFilter;
 
 // trigger an update next time the texture is used
 dataTex.needsUpdate = true;
+dataTex.generateMipmaps = true;
 
 var planeGeo = new THREE.PlaneBufferGeometry(w, h);
 
 var material = new THREE.ShaderMaterial({
   uniforms: {
     resolution: { type: "v2", value: new THREE.Vector2(w, h) },
-    texture: { type: "t", value: dataTex },
+    texture1: { type: "t", value: dataTex },
   },
 	vertexShader: document.getElementById( 'vertexShader' ).textContent,
 	fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
