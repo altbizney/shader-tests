@@ -736,59 +736,5 @@
       pointCount += points.length;
     });
   });
-
-/*
-    const path1 = find("svg path")[0];
-    const path2 = find("svg path")[1];
-    const path3 = find("svg path")[1];
-
-    const d = path1.get("d");
-
-    var outline = new PathConverter.Outline();
-    const parser = new PathConverter.SVGParser(outline);
-    parser.parse(d);
-
-    function jitter() {
-      return 0.2 * (Math.random() - 0.5);
-    }
-
-    // let's fuck things up!
-    function next() {
-      outline.getShapes().forEach(shape => {
-        shape.points.forEach(p => {
-          [p.main, p.left, p.right].forEach(pt => {
-            if (!pt) return;
-            pt.x += jitter();
-            pt.y += jitter();
-          })
-        });
-      });
-      path3.set("d", outline.toSVG());
-      requestAnimationFrame(next);
-    }
-
-    requestAnimationFrame(next);
-
-    const vertices = [`<path d="${d}"/>`];
-    outline.getShapes().forEach(shape => {
-    	shape.points.forEach(p => {
-    		let m = p.main;
-    		if (p.left) {
-    			let l = p.left;
-    			vertices.push(`<path d="M${l.x} ${l.y} L${m.x} ${m.y}" stroke="red"/>`)
-	    		vertices.push(`<circle cx="${l.x}" cy="${l.y}" r="1" fill="red" stroke="none"/>`)
-    		}
-    		if (p.right) {
-    			let r = p.right;
-    			vertices.push(`<path d="M${r.x} ${r.y} L${m.x} ${m.y}" stroke="green"/>`)
-	    		vertices.push(`<circle cx="${r.x}" cy="${r.y}" r="1" fill="green" stroke="none"/>`)
-    		}
-    		vertices.push(`<circle cx="${m.x}" cy="${m.y}" r="1" fill="blue" stroke="none"/>`)
-    	});
-    });
-
-    const svg3 = find("svg g")[2];
-    svg3.innerHTML = vertices.join('\n');
-*/
 </script>
 </html>
